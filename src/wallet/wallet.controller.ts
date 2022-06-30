@@ -6,15 +6,11 @@ import {
   UpdateWalletStatusDto,
 } from './dto/create-wallet.dto';
 import { ApiTags } from '@nestjs/swagger';
-import { Connection } from 'typeorm';
 
 @Controller('wallet')
 @ApiTags('wallet')
 export class WalletController {
-  constructor(
-    private readonly walletService: WalletService,
-    private readonly connection: Connection,
-  ) {}
+  constructor(private readonly walletService: WalletService) {}
 
   @Patch('updateStatus/:userId')
   modifyWalletStatus(
@@ -36,11 +32,7 @@ export class WalletController {
   }
 
   @Post('transfer')
-  async transferAmount(@Body() transferAmountDto: TransferAmountDto) {
-    return await this.connection.transaction((transactionManager) => {
-      return this.walletService
-        .withTransaction(transactionManager)
-        .transferWalletAmount(transferAmountDto);
-    });
+  transferAmount(@Body() transferAmountDto: TransferAmountDto) {
+    return this.walletService.transferWalletAmount(transferAmountDto);
   }
 }

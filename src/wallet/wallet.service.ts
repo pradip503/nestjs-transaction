@@ -4,19 +4,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreateWalletDto, TransferAmountDto } from './dto/create-wallet.dto';
 import { Repository } from 'typeorm';
 import { UserService } from 'src/user/user.service';
-import { TransactionFor } from 'nest-transact';
-import { ModuleRef } from '@nestjs/core';
 
 @Injectable()
-export class WalletService extends TransactionFor<WalletService> {
+export class WalletService {
   constructor(
     @InjectRepository(Wallet)
     private walletRepo: Repository<Wallet>,
     private userService: UserService,
-    moduleRef: ModuleRef,
-  ) {
-    super(moduleRef);
-  }
+  ) {}
   async create({ user }: CreateWalletDto) {
     try {
       const userToSave = await this.userService.findOne(user);
@@ -67,12 +62,11 @@ export class WalletService extends TransactionFor<WalletService> {
   async transferWalletAmount({ fromUser, toUser, amount }: TransferAmountDto) {
     try {
       /**
-       * Check if source account has the amount and check if not in dormant stage
-       * Subtract the source account
-       * Check if destination account is not in dormant stage
-       * Add the amount to destination account
+       * TODO 1: Check if source account has the amount and check if not in dormant stage
+       * TODO 2: Subtract the source account
+       * TODO 3: Check if destination account is not in dormant stage
+       * TODO 4: Add the amount to destination account
        */
-
       const fromUserData = await this.userService.findOne(fromUser);
       const toUserData = await this.userService.findOne(toUser);
 
@@ -81,9 +75,10 @@ export class WalletService extends TransactionFor<WalletService> {
           where: { user: fromUserData },
         });
 
-      const toWallet = await this.walletRepo.findOneOrFail({
-        where: { user: toUserData },
-      });
+      const { walletStatus: toWalletStatus } =
+        await this.walletRepo.findOneOrFail({
+          where: { user: toUserData },
+        });
 
       if (fromWalletAmount < amount) {
         throw new BadRequestException('Insufficient wallet amount!');
@@ -95,7 +90,7 @@ export class WalletService extends TransactionFor<WalletService> {
 
       await this.modifyWalletAmount(fromUser, amount, 'subtract');
 
-      if (toWallet.walletStatus === WalletStatus.Dormant) {
+      if (toWalletStatus === WalletStatus.Dormant) {
         throw new BadRequestException('Target account is dormant!');
       }
 
@@ -103,7 +98,7 @@ export class WalletService extends TransactionFor<WalletService> {
 
       return 'Transfer successfull!';
     } catch (error) {
-      // console.log(error);
+      console.log(error.messsage);
       throw new BadRequestException(error.message);
     }
   }
